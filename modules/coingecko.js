@@ -6,6 +6,7 @@ const supportedTokens = {
     'usdc': 'usd-coin',
     'usdt': 'tether',
     'matic': 'matic-network',
+    'link': 'chainlink',
 };
 
 

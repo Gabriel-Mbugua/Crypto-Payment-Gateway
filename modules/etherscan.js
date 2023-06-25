@@ -31,10 +31,8 @@ const getTokenAbi = async ({contract_address}) => {
             method: 'GET',
             url: `${baseUrl}?module=contract&action=getabi&address=${contract_address}&apikey=${apiKey}`,
         }
-        console.log(options)
         const response = await axios(options)
 
-        console.log(response.data)
         if(response.data.status !== '1') throw new Error('Failed to get contract ABI')
 
         return {
