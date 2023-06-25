@@ -1,2 +1,5 @@
+# ------------------------------ Sensitive data ------------------------------ #
 .env
+/modules/firestore/serviceAccount.json
+
 node_modules

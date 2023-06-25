@@ -1,6 +1,5 @@
 const { Web3 } = require('web3');
 const path = require('path');
-const { sendERC20Token } = require('..');
 require('dotenv').config({
     path: path.join(__dirname, '../', './.env'),
 });
