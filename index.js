@@ -4,7 +4,7 @@ const Joi = require("joi");
 const { Web3 } = require('web3');
 const bodyParser = require('body-parser');
 const { polygonGenerateWallet } = require('./modules/polygon');
-const { derivePrivateKey, decodeTransferLog, getProviderUrl, getTokenContractAddress, sleep } = require('./modules/tools');
+const { derivePrivateKey, decodeTransferLog, getProviderUrl, getTokenContractAddress, sleep, UNISWAP_V3_SWAP_ROUTER_ADDRESSES } = require('./modules/tools');
 const { listenForTransaction, listenToAccount, listenToTokenTransfers } = require('./modules/listener');
 const { coinGeckoGetCoinId, coinGeckoGetCoinInfo } = require('./modules/coingecko');
 const { etherScanGetTokenAbi } = require('./modules/etherscan');
@@ -20,6 +20,7 @@ var dotenv = require("dotenv").config({
 const admin = require('firebase-admin');
 const { getFirestore, Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
 const serviceAccount = require('./modules/firestore/serviceAccount.json');
+const { uniswapSwapRouter02Abi, erc20Abi } = require('./modules/abis');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -148,7 +149,6 @@ const updateFirestoreDoc = async ({collection, documentId, data}) => {
       }
   }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /*                                FIRESTORE END                               */
@@ -376,6 +376,77 @@ const sendERC20Token = async ({network ,from, to, amount, token, senderPrivateKe
       }
   }
 }
+
+
+const swapToken = async ({network, fromToken, toToken, address, sandbox = true}) => {
+  try{
+    const providerUrl = await getProviderUrl({
+      network,
+      sandbox
+    })
+
+    if(!providerUrl) throw new Error("Unsupported provider")
+
+    // Fetch the token contract addresses
+    const fromTokenContractAddress = getTokenContractAddress(fromToken) // This is the actual address of the token you want to swap from
+    const toTokenContractAddress = getTokenContractAddress(toToken) // This is the actual address of the token you want to swap to
+
+    if(!fromTokenContractAddress) throw new Error(`${fromToken} not supported`)
+    if(!toTokenContractAddress) throw new Error(`${toToken} not supported`)
+
+    const web3 = new Web3(providerUrl);
+
+    const gasPrice = await web3.eth.getGasPrice();
+
+    const swapRouterAddress = UNISWAP_V3_SWAP_ROUTER_ADDRESSES[network]
+    const swapRouter = new web3.eth.Contract(uniswapSwapRouter02Abi, swapRouterAddress);
+
+    // Define the swap parameters
+    const amountIn = web3.utils.toWei('1', 'ether'); // For example, swap 1 token
+    const amountOutMin = 0; // The minimum amount of output tokens you'd accept
+    const path = [fromTokenContractAddress, toTokenContractAddress]; // The path of the swap
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
+
+    // Before we can swap, we need to approve the SwapRouter to spend the user's tokens
+    const tokenToSwap = new web3.eth.Contract(erc20Abi, fromTokenContractAddress);
+    await tokenToSwap.methods.approve(swapRouterAddress, amountIn).send({ from: address });
+
+    const tx = {
+      from: address,
+      to: swapRouterAddress,
+      gas: gasPrice,  // Adjust as necessary
+      data: swapRouter.methods.exactInput({ // Call the exactInput function on the SwapRouter contract
+        path: path,
+        recipient: address,
+        deadline: deadline,
+        amountIn: amountIn,
+        amountOutMinimum: amountOutMin,
+      }).encodeABI()
+    };
+
+    const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+
+    web3.eth.sendSignedTransaction(signedTx.rawTransaction)
+    .on('transactionHash', function(hash) {
+        console.log('Transaction hash: ', hash);
+    })
+    .on('receipt', function(receipt) {
+      console.log('Receipt: ', receipt);
+    })
+    .on('error', function(error) {
+      console.error('Error: ', error);
+    })
+  }catch(err){
+    console.log(err)
+    return {
+      success: false,
+      data: err.message
+    }
+  }
+}
+// swapToken({
+//   network: 'polygon'
+// })
 
 // module.exports = {
 //   sendERC20Token

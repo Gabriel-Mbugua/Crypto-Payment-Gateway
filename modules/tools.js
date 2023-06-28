@@ -23,7 +23,7 @@ const tokenContractAddresses = {
     ETH: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', 
     MATIC: '0x0000000000000000000000000000000000001010',
     USDT: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
-    USDC: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+    USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     LINK: '0x326C977E6efc84E512bB9C30f76E30c160eD06FB' // 
     // Add more token symbols and contract addresses as needed
 };
@@ -36,6 +36,17 @@ const sandboxTokenContractAddresses = {
     LINK: '0x326C977E6efc84E512bB9C30f76E30c160eD06FB' // 
     // Add more token symbols and contract addresses as needed
 };
+
+/* - maps networks to the respesctive uniswap swapRouter contract addresses - */
+const UNISWAP_V3_SWAP_ROUTER_ADDRESSES = {
+    eth: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+    goerli: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+    polygon: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+    arbitrum: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+    optimism: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+    celo: "0x5615CDAb10dc425a742d643d949a7F474C01abc4",
+    bsc: "0xB971eF87ede563556b2ED4b1C0b0019111Dd85d2",
+}
 
 const getProviderUrl = async ({network, sandbox = true}) => {
     try{
@@ -241,5 +252,6 @@ module.exports = {
     getTokenDecimals,
     derivePrivateKey,
     decodeTransferLog,
-    getTokenContractAddress
+    getTokenContractAddress,
+    UNISWAP_V3_SWAP_ROUTER_ADDRESSES
 }
